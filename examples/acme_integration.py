@@ -1,11 +1,11 @@
 """
-Coachello integration example.
+Acme Corp integration example.
 
 Shows how a developer embeds the apikeys SDK in their own backend
 to issue and validate API keys for their own end-users.
 
 Run:
-    python examples/coachello_integration.py
+    python examples/acme_integration.py
 """
 import asyncio
 
@@ -14,19 +14,19 @@ from apikeys.db.session import create_tables
 
 
 async def main() -> None:
-    DB_URL = "sqlite+aiosqlite:///examples/coachello_demo.db"
+    DB_URL = "sqlite+aiosqlite:///examples/acme_demo.db"
     await create_tables(DB_URL)
     client = APIKeyClient(DB_URL)
 
     # ── One-time setup (run once at deploy / seed time) ──────────────────────
     print("=== Setup ===")
-    org = await client.create_organization("Coachello Inc")
+    org = await client.create_organization("Acme Corp")
     print(f"org_id:     {org.id}")
 
-    product = await client.create_product(str(org.id), "Coachello")
+    product = await client.create_product(str(org.id), "Acme App")
     print(f"product_id: {product.id}")
 
-    project = await client.create_project(str(org.id), "Coachello API v1")
+    project = await client.create_project(str(org.id), "Acme API v1")
     print(f"project_id: {project.id}")
 
     await client.add_product_to_project(str(product.id), str(project.id))
@@ -37,7 +37,7 @@ async def main() -> None:
     PRODUCT_ID = str(product.id)
     PROJECT_ID = str(project.id)
 
-    # ── Per-user key creation (coachello-back: POST /user/apikeys) ───────────
+    # ── Per-user key creation (your-backend: POST /user/apikeys) ─────────────
     print("\n=== User Alice creates a key ===")
     alice = {"user_id": "u_alice", "email": "alice@example.com", "plan": "pro"}
 
@@ -47,7 +47,7 @@ async def main() -> None:
         product_id=PRODUCT_ID,
         metadata=KeyMetadata(
             name="Alice's production key",
-            scopes=["coaching:read", "coaching:write"],
+            scopes=["read", "write"],
             rate_limit=1000,
             custom=alice,
         ),
@@ -55,12 +55,12 @@ async def main() -> None:
     print(f"key_id:    {result.key.id}")
     print(f"plaintext: {result.plaintext}  ← return this ONCE to the user")
 
-    # ── Incoming request validation (coachello-back middleware) ──────────────
+    # ── Incoming request validation (your-backend middleware) ─────────────────
     print("\n=== Incoming request with Alice's key ===")
     key = await client.validate_key(
         result.plaintext,
         product_id=PRODUCT_ID,
-        required_scope="coaching:read",
+        required_scope="read",
     )
     user_id = key.metadata.custom["user_id"]
     plan = key.metadata.custom["plan"]

@@ -91,7 +91,7 @@ from apikeys import InvalidKeyError, RevokedKeyError, InsufficientScopeError
 
 ## Full example
 
-See [`examples/coachello_integration.py`](examples/coachello_integration.py) for a complete end-to-end script showing setup, per-user key creation, request validation, and listing keys by user.
+See [`examples/acme_integration.py`](examples/acme_integration.py) for a complete end-to-end script showing setup, per-user key creation, request validation, and listing keys by user.
 
 ## License
 
