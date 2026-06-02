@@ -13,7 +13,10 @@ pip install "apikeys-platform[sqlite]"
 # PostgreSQL (production)
 pip install "apikeys-platform[postgresql]"
 
-# Both drivers
+# MySQL (production)
+pip install "apikeys-platform[mysql]"
+
+# All drivers
 pip install "apikeys-platform[all]"
 ```
 
@@ -30,6 +33,7 @@ from apikeys import APIKeyClient, KeyMetadata, create_tables
 async def main():
     # SQLite for dev:   "sqlite:///myapp.db"
     # PostgreSQL prod:  "postgresql://user:pass@host:5432/dbname"
+    # MySQL prod:       "mysql://user:pass@host:3306/dbname"
     db_url = "sqlite:///myapp.db"
     await create_tables(db_url)   # creates tables on first run; safe to call on every restart
     client = APIKeyClient(db_url)
@@ -91,9 +95,61 @@ from apikeys import InvalidKeyError, RevokedKeyError, InsufficientScopeError
 
 ## Full example
 
-See [`examples/acme_integration.py`](examples/acme_integration.py) for a complete end-to-end script showing setup, per-user key creation, request validation, and listing keys by user.
+End-to-end script showing one-time setup, per-user key creation, request validation, and listing keys by user:
+
+```python
+import asyncio
+from apikeys import APIKeyClient, KeyMetadata
+from apikeys.db.session import create_tables
+
+async def main() -> None:
+    DB_URL = "sqlite+aiosqlite:///acme_demo.db"
+    await create_tables(DB_URL)
+    client = APIKeyClient(DB_URL)
+
+    # ── One-time setup ───────────────────────────────────────────────────────
+    org     = await client.create_organization("Acme Corp")
+    product = await client.create_product(str(org.id), "Acme App")
+    project = await client.create_project(str(org.id), "Acme API v1")
+    await client.add_product_to_project(str(product.id), str(project.id))
+
+    ORG_ID     = str(org.id)
+    PRODUCT_ID = str(product.id)
+    PROJECT_ID = str(project.id)
+
+    # ── Issue a key for a user ───────────────────────────────────────────────
+    result = await client.create_key(
+        ORG_ID,
+        project_id=PROJECT_ID,
+        product_id=PRODUCT_ID,
+        metadata=KeyMetadata(
+            name="Alice's production key",
+            scopes=["read", "write"],
+            rate_limit=1000,
+            custom={"user_id": "u_alice", "plan": "pro"},
+        ),
+    )
+    print(f"plaintext: {result.plaintext}")  # return this ONCE to the user
+
+    # ── Validate an incoming request ─────────────────────────────────────────
+    key = await client.validate_key(
+        result.plaintext,
+        product_id=PRODUCT_ID,
+        required_scope="read",
+    )
+    print(f"user: {key.metadata.custom['user_id']}  plan: {key.metadata.custom['plan']}")
+
+    # ── List a user's keys ───────────────────────────────────────────────────
+    all_keys   = await client.list_project_keys(PROJECT_ID)
+    alice_keys = [k for k in all_keys if k.metadata.custom.get("user_id") == "u_alice"]
+    for k in alice_keys:
+        print(f"  {k.metadata.name}  [{k.id}]  revoked={k.revoked_at is not None}")
+
+asyncio.run(main())
+```
+
+Source: [`examples/acme_integration.py`](https://github.com/AKSHILMY/api-project/blob/main/examples/acme_integration.py)
 
 ## License
 
 MIT
-# api-project
