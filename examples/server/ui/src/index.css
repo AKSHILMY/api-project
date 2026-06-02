@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Google Sans', Roboto, system-ui, -apple-system, sans-serif;
+  background: #f8f9fa;
+  color: #202124;
+  font-size: 14px;
+}
+
+#root { min-height: 100vh; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #dadce0; border-radius: 3px; }
