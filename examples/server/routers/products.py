@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from apikeys import APIKeyClient, APIKeyError, Product
+from apikeys.exceptions import AlreadyExistsError
 from ..deps import get_client
 
 router = APIRouter(tags=["products"])
@@ -28,6 +29,8 @@ async def create_product(
 ):
     try:
         return await client.create_product(org_id, body.name)
+    except AlreadyExistsError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except APIKeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

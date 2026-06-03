@@ -7,6 +7,8 @@ _ASYNC_SCHEMES: dict[str, str] = {
     "postgresql": "postgresql+asyncpg",
     "postgres": "postgresql+asyncpg",
     "sqlite": "sqlite+aiosqlite",
+    "mysql": "mysql+aiomysql",
+    "mariadb": "mariadb+aiomysql",
 }
 
 

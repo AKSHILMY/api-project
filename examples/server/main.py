@@ -2,13 +2,13 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from apikeys.db.session import create_tables
 
-from .deps import DB_URL
+from .deps import DB_URL, get_client
 from .routers import keys, orgs, products, projects
 
 
@@ -26,6 +26,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Make the APIKeyClient available on request.state so APIKeyDepends can find it.
+@app.middleware("http")
+async def attach_apikey_client(request: Request, call_next):
+    request.state.apikeys_client = get_client()
+    return await call_next(request)
+
 
 app.include_router(orgs.router)
 app.include_router(projects.router)

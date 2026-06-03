@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from apikeys import APIKeyClient, APIKeyError, Organization
+from apikeys.exceptions import AlreadyExistsError
 from ..deps import get_client
 
 router = APIRouter(prefix="/api/orgs", tags=["organizations"])
@@ -18,7 +19,10 @@ async def list_orgs(client: APIKeyClient = Depends(get_client)):
 
 @router.post("", response_model=Organization, status_code=201)
 async def create_org(body: CreateOrgBody, client: APIKeyClient = Depends(get_client)):
-    return await client.create_organization(body.name)
+    try:
+        return await client.create_organization(body.name)
+    except AlreadyExistsError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 @router.get("/{org_id}", response_model=Organization)

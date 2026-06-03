@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from apikeys import APIKeyClient, APIKeyError, Project
+from apikeys.exceptions import AlreadyExistsError
 from ..deps import get_client
 
 router = APIRouter(tags=["projects"])
@@ -28,5 +29,7 @@ async def create_project(
 ):
     try:
         return await client.create_project(org_id, body.name)
+    except AlreadyExistsError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except APIKeyError as e:
         raise HTTPException(status_code=404, detail=str(e))

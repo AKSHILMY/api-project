@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from enum import Enum
 from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -29,12 +30,32 @@ class Product(Base):
     created_at: datetime
 
 
+class RateLimitWindow(str, Enum):
+    second = "second"
+    minute = "minute"
+    hour = "hour"
+    day = "day"
+
+
+class RateLimit(Base):
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+    requests: int
+    window: RateLimitWindow = RateLimitWindow.minute
+
+
 class KeyMetadata(Base):
     name: Optional[str] = None
     scopes: list[str] = []
-    rate_limit: Optional[int] = None
+    rate_limit: Optional[RateLimit] = None
     expires_at: Optional[datetime] = None
     custom: dict[str, Any] = {}
+
+
+class KeyStatus(str, Enum):
+    active = "active"
+    revoked = "revoked"
+    expired = "expired"
+    all = "all"
 
 
 class APIKey(Base):
@@ -46,6 +67,8 @@ class APIKey(Base):
     metadata: KeyMetadata
     revoked_at: Optional[datetime]
     created_at: datetime
+    last_used_at: Optional[datetime] = None
+    use_count: int = 0
 
 
 class APIKeyCreated(Base):
